@@ -1,0 +1,40 @@
+{
+  "name": "paycore-backend",
+  "version": "1.0.0",
+  "description": "PayCore is a PSP B2B backend platform for managing companies, accounts, transfers, payments, and audit trails.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "psp",
+    "fintech",
+    "backend",
+    "nodejs",
+    "express",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^latest",
+    "bcrypt": "^latest",
+    "cors": "^latest",
+    "dotenv": "^latest",
+    "express": "^latest",
+    "helmet": "^latest",
+    "jsonwebtoken": "^latest",
+    "morgan": "^latest",
+    "zod": "^latest"
+  },
+  "devDependencies": {
+    "nodemon": "^latest",
+    "prisma": "^latest"
+  }
+}
