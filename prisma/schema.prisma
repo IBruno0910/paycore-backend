@@ -51,6 +51,12 @@ model Account {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  outgoingTransfers Transfer[]    @relation("SourceAccountTransfers")
+  incomingTransfers Transfer[]    @relation("DestinationAccountTransfers")
+  transactions      Transaction[]
+
+  @@unique([companyId, alias])
 }
 
 model RefreshToken {
@@ -73,4 +79,35 @@ model AuditLog {
   metadata   Json?
 
   createdAt DateTime @default(now())
+}
+
+model Transfer {
+  id                   String   @id @default(uuid())
+  companyId            String
+  sourceAccountId      String
+  destinationAccountId String
+  amount               Float
+  currency             String
+  status               String   @default("COMPLETED")
+  description          String?
+  createdByUserId      String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  sourceAccount      Account @relation("SourceAccountTransfers", fields: [sourceAccountId], references: [id])
+  destinationAccount Account @relation("DestinationAccountTransfers", fields: [destinationAccountId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  accountId   String
+  type        String
+  amount      Float
+  balanceBefore Float
+  balanceAfter  Float
+  description String?
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id])
 }
