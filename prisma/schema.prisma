@@ -88,9 +88,12 @@ model Transfer {
   destinationAccountId String
   amount               Float
   currency             String
-  status               String   @default("COMPLETED")
+  status               String   @default("PENDING")
   description          String?
+  failureReason        String?
+  idempotencyKey       String?  @unique
   createdByUserId      String
+  processedAt          DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -111,3 +114,4 @@ model Transaction {
 
   account Account @relation(fields: [accountId], references: [id])
 }
+
