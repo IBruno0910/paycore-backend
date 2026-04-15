@@ -4,9 +4,6 @@ import { createTransfer, getCompanyTransfers, getTransferById } from "./transfer
 export const createTransferHandler = async (req, res, next) => {
   try {
 
-    console.log("HEADERS:", req.headers);
-    console.log("IDEMPOTENCY HEADER:", req.headers["idempotency-key"]);
-
     const validatedData = createTransferSchema.parse(req.body);
 
     const idempotencyKey = req.headers["idempotency-key"];

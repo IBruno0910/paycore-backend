@@ -1,5 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../shared/errors/AppError.js";
+import { createWebhookEvent } from "../webhooks/webhooks.service.js";
+import { dispatchWebhookEvent } from "../webhooks/webhooks.dispatcher.js";
 
 export const createTransfer = async ({
   sourceAccountId,
@@ -58,6 +60,23 @@ export const createTransfer = async ({
       idempotencyKey, // 👈 esto
     },
   });
+
+const createdEvent = await createWebhookEvent({
+  eventType: "transfer.created",
+  entityType: "TRANSFER",
+  entityId: transfer.id,
+  payload: {
+    transferId: transfer.id,
+    companyId,
+    sourceAccountId,
+    destinationAccountId,
+    amount,
+    currency: sourceAccount.currency,
+    status: "PENDING",
+  },
+});
+
+await dispatchWebhookEvent(createdEvent);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -166,9 +185,26 @@ export const createTransfer = async ({
       return completedTransfer;
     });
 
+const completedEvent = await createWebhookEvent({
+  eventType: "transfer.completed",
+  entityType: "TRANSFER",
+  entityId: result.id,
+  payload: {
+    transferId: result.id,
+    companyId,
+    sourceAccountId,
+    destinationAccountId,
+    amount,
+    status: result.status,
+    processedAt: result.processedAt,
+  },
+});
+
+await dispatchWebhookEvent(completedEvent);
+
     return result;
   } catch (error) {
-    await prisma.transfer.update({
+    const failedTransfer = await prisma.transfer.update({
       where: { id: transfer.id },
       data: {
         status: "FAILED",
@@ -176,6 +212,24 @@ export const createTransfer = async ({
         processedAt: new Date(),
       },
     });
+
+    const failedEvent = await createWebhookEvent({
+      eventType: "transfer.failed",
+      entityType: "TRANSFER",
+      entityId: failedTransfer.id,
+      payload: {
+        transferId: failedTransfer.id,
+        companyId,
+        sourceAccountId,
+        destinationAccountId,
+        amount,
+        status: failedTransfer.status,
+        failureReason: failedTransfer.failureReason,
+        processedAt: failedTransfer.processedAt,
+      },
+    });
+
+    await dispatchWebhookEvent(failedEvent);
 
     await prisma.auditLog.create({
       data: {

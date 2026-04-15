@@ -115,3 +115,23 @@ model Transaction {
   account Account @relation(fields: [accountId], references: [id])
 }
 
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  eventType   String
+  entityType  String
+  entityId    String
+  payload     Json
+  status      String   @default("PENDING")
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WebhookEndpoint {
+  id         String   @id @default(uuid())
+  companyId  String
+  url        String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
