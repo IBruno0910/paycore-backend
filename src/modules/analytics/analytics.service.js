@@ -268,3 +268,79 @@ export const getRecentFailedWebhooks = async (companyId) => {
 
   return failedWebhookEvents;
 };
+
+export const getOperationalAlerts = async (companyId) => {
+  const alerts = [];
+
+  const transfersAnalytics = await getTransfersAnalytics(companyId);
+  const webhooksAnalytics = await getWebhooksAnalytics(companyId);
+  const timeline = await getTransfersTimeline(companyId);
+
+  if (transfersAnalytics.failedRate > 15) {
+    alerts.push({
+      type: "HIGH_TRANSFER_FAILURE_RATE",
+      severity: "HIGH",
+      message: "Transfer failure rate is above the expected threshold",
+      details: {
+        failedRate: transfersAnalytics.failedRate,
+        threshold: 15,
+      },
+    });
+  }
+
+  const pendingTransfersCount = await prisma.transfer.count({
+    where: {
+      companyId,
+      status: "PENDING",
+    },
+  });
+
+  if (pendingTransfersCount > 0) {
+    alerts.push({
+      type: "PENDING_TRANSFERS_DETECTED",
+      severity: "MEDIUM",
+      message: "There are pending transfers that require attention",
+      details: {
+        pendingTransfersCount,
+      },
+    });
+  }
+
+  if (webhooksAnalytics.failedWebhookEvents > 0) {
+    alerts.push({
+      type: "FAILED_WEBHOOKS_DETECTED",
+      severity: "HIGH",
+      message: "Some webhook deliveries have failed",
+      details: {
+        failedWebhookEvents: webhooksAnalytics.failedWebhookEvents,
+      },
+    });
+  }
+
+  if (timeline.length >= 2) {
+    const today = timeline[timeline.length - 1];
+    const previousDays = timeline.slice(0, -1);
+
+    const historicalAverage =
+      previousDays.reduce((sum, day) => sum + day.totalVolume, 0) /
+      previousDays.length;
+
+    if (
+      historicalAverage > 0 &&
+      today.totalVolume > historicalAverage * 1.5
+    ) {
+      alerts.push({
+        type: "UNUSUAL_TRANSFER_VOLUME",
+        severity: "MEDIUM",
+        message: "Today's transfer volume is significantly above the historical average",
+        details: {
+          todayVolume: today.totalVolume,
+          historicalAverage: Number(historicalAverage.toFixed(2)),
+          thresholdMultiplier: 1.5,
+        },
+      });
+    }
+  }
+
+  return alerts;
+};
