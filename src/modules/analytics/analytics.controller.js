@@ -3,6 +3,9 @@ import {
   getWebhooksAnalytics,
   getGeneralAnalyticsSummary,
   getTopAccountsByVolume,
+  getTransfersTimeline,
+  getRecentFailedTransfers,
+  getRecentFailedWebhooks,
 } from "./analytics.service.js";
 
 export const getTransfersAnalyticsHandler = async (req, res, next) => {
@@ -51,6 +54,45 @@ export const getTopAccountsByVolumeHandler = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: topAccounts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTransfersTimelineHandler = async (req, res, next) => {
+  try {
+    const timeline = await getTransfersTimeline(req.user.companyId);
+
+    return res.status(200).json({
+      success: true,
+      data: timeline,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRecentFailedTransfersHandler = async (req, res, next) => {
+  try {
+    const failedTransfers = await getRecentFailedTransfers(req.user.companyId);
+
+    return res.status(200).json({
+      success: true,
+      data: failedTransfers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRecentFailedWebhooksHandler = async (req, res, next) => {
+  try {
+    const failedWebhooks = await getRecentFailedWebhooks(req.user.companyId);
+
+    return res.status(200).json({
+      success: true,
+      data: failedWebhooks,
     });
   } catch (error) {
     next(error);

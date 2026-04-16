@@ -4,6 +4,9 @@ import {
   getWebhooksAnalyticsHandler,
   getGeneralAnalyticsSummaryHandler,
   getTopAccountsByVolumeHandler,
+  getTransfersTimelineHandler,
+  getRecentFailedTransfersHandler,
+  getRecentFailedWebhooksHandler,
 } from "./analytics.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { roleMiddleware } from "../../middlewares/role.middleware.js";
@@ -35,6 +38,24 @@ router.get(
   "/top-accounts",
   roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
   getTopAccountsByVolumeHandler
+);
+
+router.get(
+  "/transfers/timeline",
+  roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
+  getTransfersTimelineHandler
+);
+
+router.get(
+  "/transfers/recent-failures",
+  roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
+  getRecentFailedTransfersHandler
+);
+
+router.get(
+  "/webhooks/recent-failures",
+  roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
+  getRecentFailedWebhooksHandler
 );
 
 export default router;

@@ -157,3 +157,114 @@ export const getTopAccountsByVolume = async (companyId) => {
 
   return rankedAccounts.slice(0, 5);
 };
+
+export const getTransfersTimeline = async (companyId) => {
+  const transfers = await prisma.transfer.findMany({
+    where: {
+      companyId,
+    },
+    select: {
+      createdAt: true,
+      amount: true,
+      status: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  const groupedByDay = {};
+
+  for (const transfer of transfers) {
+    const day = transfer.createdAt.toISOString().split("T")[0];
+
+    if (!groupedByDay[day]) {
+      groupedByDay[day] = {
+        date: day,
+        totalTransfers: 0,
+        completedTransfers: 0,
+        failedTransfers: 0,
+        pendingTransfers: 0,
+        totalVolume: 0,
+      };
+    }
+
+    groupedByDay[day].totalTransfers += 1;
+
+    if (transfer.status === "COMPLETED") {
+      groupedByDay[day].completedTransfers += 1;
+      groupedByDay[day].totalVolume += transfer.amount;
+    } else if (transfer.status === "FAILED") {
+      groupedByDay[day].failedTransfers += 1;
+    } else if (transfer.status === "PENDING") {
+      groupedByDay[day].pendingTransfers += 1;
+    }
+  }
+
+  return Object.values(groupedByDay);
+};
+
+export const getRecentFailedTransfers = async (companyId) => {
+  const failedTransfers = await prisma.transfer.findMany({
+    where: {
+      companyId,
+      status: "FAILED",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 10,
+    select: {
+      id: true,
+      sourceAccountId: true,
+      destinationAccountId: true,
+      amount: true,
+      currency: true,
+      description: true,
+      failureReason: true,
+      createdAt: true,
+      processedAt: true,
+    },
+  });
+
+  return failedTransfers;
+};
+
+export const getRecentFailedWebhooks = async (companyId) => {
+  const relatedTransfers = await prisma.transfer.findMany({
+    where: { companyId },
+    select: { id: true },
+  });
+
+  const transferIds = relatedTransfers.map((transfer) => transfer.id);
+
+  if (transferIds.length === 0) {
+    return [];
+  }
+
+  const failedWebhookEvents = await prisma.webhookEvent.findMany({
+    where: {
+      entityType: "TRANSFER",
+      entityId: {
+        in: transferIds,
+      },
+      status: "FAILED",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 10,
+    select: {
+      id: true,
+      eventType: true,
+      entityId: true,
+      status: true,
+      payload: true,
+      deliveredAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return failedWebhookEvents;
+};
