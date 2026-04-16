@@ -3,6 +3,7 @@ import authRoutes from "../modules/auth/auth.routes.js";
 import accountsRoutes from "../modules/accounts/accounts.routes.js";
 import transfersRoutes from "../modules/transfers/transfers.routes.js";
 import webhooksRoutes from "../modules/webhooks/webhooks.routes.js";
+import analyticsRoutes from "../modules/analytics/analytics.routes.js";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/auth", authRoutes);
 router.use("/accounts", accountsRoutes);
 router.use("/transfers", transfersRoutes);
 router.use("/webhooks", webhooksRoutes);
+router.use("/analytics", analyticsRoutes);
 
 export default router;
