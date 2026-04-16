@@ -37,3 +37,31 @@ export const createWebhookEndpointHandler = async (req, res, next) => {
     next(error);
   }
 };
+
+import { dispatchWebhookEvent } from "./webhooks.dispatcher.js";
+
+export const retryWebhookEventHandler = async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await prisma.webhookEvent.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Webhook event not found",
+      });
+    }
+
+    await dispatchWebhookEvent(event);
+
+    return res.status(200).json({
+      success: true,
+      message: "Webhook retry triggered",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

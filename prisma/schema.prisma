@@ -131,6 +131,7 @@ model WebhookEndpoint {
   id         String   @id @default(uuid())
   companyId  String
   url        String
+  secret     String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

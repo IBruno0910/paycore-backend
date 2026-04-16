@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db.js";
+import { generateWebhookSignature } from "./webhooks.signature.js";
 
 export const dispatchWebhookEvent = async (event) => {
   const endpoints = await prisma.webhookEndpoint.findMany({
@@ -10,16 +11,21 @@ export const dispatchWebhookEvent = async (event) => {
 
   for (const endpoint of endpoints) {
     try {
-      await fetch(endpoint.url, {
+      const payload = {
+            eventType: event.eventType,
+            data: event.payload,
+        };
+
+        const signature = generateWebhookSignature(payload, endpoint.secret || "");
+
+        await fetch(endpoint.url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+            "Content-Type": "application/json",
+            "X-PayCore-Signature": signature,
         },
-        body: JSON.stringify({
-          eventType: event.eventType,
-          data: event.payload,
-        }),
-      });
+        body: JSON.stringify(payload),
+        });
 
       await prisma.webhookEvent.update({
         where: { id: event.id },
