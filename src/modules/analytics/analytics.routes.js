@@ -8,6 +8,8 @@ import {
   getRecentFailedTransfersHandler,
   getRecentFailedWebhooksHandler,
   getOperationalAlertsHandler,
+  getSmartAlertsHandler,
+  getAnalyticsInsightsHandler,
 } from "./analytics.controller.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { roleMiddleware } from "../../middlewares/role.middleware.js";
@@ -63,6 +65,18 @@ router.get(
   "/alerts",
   roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
   getOperationalAlertsHandler
+);
+
+router.get(
+  "/smart-alerts",
+  roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
+  getSmartAlertsHandler
+);
+
+router.get(
+  "/insights",
+  roleMiddleware(ROLES.SUPER_ADMIN, ROLES.COMPANY_ADMIN, ROLES.ANALYST),
+  getAnalyticsInsightsHandler
 );
 
 export default router;

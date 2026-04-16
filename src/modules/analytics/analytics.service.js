@@ -344,3 +344,169 @@ export const getOperationalAlerts = async (companyId) => {
 
   return alerts;
 };
+
+export const getSmartAlerts = async (companyId) => {
+  const alerts = [];
+
+  const transfers = await prisma.transfer.findMany({
+    where: { companyId },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      createdAt: true,
+      sourceAccountId: true,
+      destinationAccountId: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const completedTransfers = transfers.filter(
+    (transfer) => transfer.status === "COMPLETED"
+  );
+
+  const failedTransfers = transfers.filter(
+    (transfer) => transfer.status === "FAILED"
+  );
+
+  if (completedTransfers.length > 0) {
+    const averageCompletedAmount =
+      completedTransfers.reduce((sum, transfer) => sum + transfer.amount, 0) /
+      completedTransfers.length;
+
+    const unusuallyLargeTransfers = completedTransfers.filter(
+      (transfer) => transfer.amount > averageCompletedAmount * 2
+    );
+
+    if (unusuallyLargeTransfers.length > 0) {
+      alerts.push({
+        type: "UNUSUAL_LARGE_TRANSFERS",
+        severity: "MEDIUM",
+        message: "Some completed transfers are significantly above the average amount",
+        details: {
+          averageCompletedAmount: Number(averageCompletedAmount.toFixed(2)),
+          unusuallyLargeTransfersCount: unusuallyLargeTransfers.length,
+          thresholdMultiplier: 2,
+        },
+      });
+    }
+  }
+
+  const recentFailedTransfers = failedTransfers.filter((transfer) => {
+    const diffInMs = new Date() - new Date(transfer.createdAt);
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    return diffInHours <= 24;
+  });
+
+  if (recentFailedTransfers.length >= 3) {
+    alerts.push({
+      type: "RECENT_FAILED_TRANSFERS_SPIKE",
+      severity: "HIGH",
+      message: "There is a recent spike in failed transfers during the last 24 hours",
+      details: {
+        recentFailedTransfersCount: recentFailedTransfers.length,
+        timeWindowHours: 24,
+      },
+    });
+  }
+
+  const topAccounts = await getTopAccountsByVolume(companyId);
+
+  if (topAccounts.length > 0) {
+    const totalVolume = topAccounts.reduce(
+      (sum, account) => sum + account.totalVolume,
+      0
+    );
+
+    const leadingAccount = topAccounts[0];
+
+    if (totalVolume > 0) {
+      const concentrationRate = (leadingAccount.totalVolume / totalVolume) * 100;
+
+      if (concentrationRate > 70) {
+        alerts.push({
+          type: "HIGH_ACCOUNT_VOLUME_CONCENTRATION",
+          severity: "MEDIUM",
+          message: "A single account concentrates most of the transfer volume",
+          details: {
+            accountAlias: leadingAccount.alias,
+            concentrationRate: Number(concentrationRate.toFixed(2)),
+            threshold: 70,
+          },
+        });
+      }
+    }
+  }
+
+  return alerts;
+};
+
+export const getAnalyticsInsights = async (companyId) => {
+  const insights = [];
+
+  const summary = await getGeneralAnalyticsSummary(companyId);
+  const topAccounts = await getTopAccountsByVolume(companyId);
+  const timeline = await getTransfersTimeline(companyId);
+  const smartAlerts = await getSmartAlerts(companyId);
+
+  if (summary.transfers.failedRate > 15) {
+    insights.push({
+      type: "RISK",
+      message: `Transfer failure rate is currently ${summary.transfers.failedRate}% and should be reviewed.`,
+    });
+  } else {
+    insights.push({
+      type: "HEALTH",
+      message: `Transfer failure rate is under control at ${summary.transfers.failedRate}%.`,
+    });
+  }
+
+  if (topAccounts.length > 0) {
+    insights.push({
+      type: "VOLUME",
+      message: `Most transfer volume is currently concentrated in account ${topAccounts[0].alias}.`,
+    });
+  }
+
+  if (timeline.length >= 2) {
+    const today = timeline[timeline.length - 1];
+    const previousDays = timeline.slice(0, -1);
+
+    const historicalAverage =
+      previousDays.reduce((sum, day) => sum + day.totalVolume, 0) /
+      previousDays.length;
+
+    if (historicalAverage > 0 && today.totalVolume > historicalAverage * 1.5) {
+      insights.push({
+        type: "TREND",
+        message: `Today's completed transfer volume is significantly above the recent historical average.`,
+      });
+    }
+  }
+
+  if (summary.webhooks.deliveryRate === 100) {
+    insights.push({
+      type: "WEBHOOKS",
+      message: "Webhook delivery health is currently stable.",
+    });
+  } else {
+    insights.push({
+      type: "WEBHOOKS",
+      message: `Webhook delivery rate is ${summary.webhooks.deliveryRate}% and may require attention.`,
+    });
+  }
+
+  if (smartAlerts.length === 0) {
+    insights.push({
+      type: "STATUS",
+      message: "No additional smart alerts were detected at this time.",
+    });
+  }
+
+  return {
+    insights,
+    smartAlerts,
+  };
+};

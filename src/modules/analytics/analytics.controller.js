@@ -7,8 +7,9 @@ import {
   getRecentFailedTransfers,
   getRecentFailedWebhooks,
   getOperationalAlerts,
+  getSmartAlerts,
+  getAnalyticsInsights,
 } from "./analytics.service.js";
-
 export const getTransfersAnalyticsHandler = async (req, res, next) => {
   try {
     const analytics = await getTransfersAnalytics(req.user.companyId);
@@ -107,6 +108,32 @@ export const getOperationalAlertsHandler = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: alerts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSmartAlertsHandler = async (req, res, next) => {
+  try {
+    const alerts = await getSmartAlerts(req.user.companyId);
+
+    return res.status(200).json({
+      success: true,
+      data: alerts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAnalyticsInsightsHandler = async (req, res, next) => {
+  try {
+    const insights = await getAnalyticsInsights(req.user.companyId);
+
+    return res.status(200).json({
+      success: true,
+      data: insights,
     });
   } catch (error) {
     next(error);
