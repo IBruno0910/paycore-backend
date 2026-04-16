@@ -1,7 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import { createWebhookEvent } from "../webhooks/webhooks.service.js";
-import { dispatchWebhookEvent } from "../webhooks/webhooks.dispatcher.js";
+import { enqueueWebhookEvent } from "../webhooks/webhooks.queue.js";
 
 export const createTransfer = async ({
   sourceAccountId,
@@ -76,7 +76,7 @@ const createdEvent = await createWebhookEvent({
   },
 });
 
-await dispatchWebhookEvent(createdEvent);
+await enqueueWebhookEvent(createdEvent.id);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -200,7 +200,7 @@ const completedEvent = await createWebhookEvent({
   },
 });
 
-await dispatchWebhookEvent(completedEvent);
+await enqueueWebhookEvent(completedEvent.id);
 
     return result;
   } catch (error) {
@@ -229,7 +229,7 @@ await dispatchWebhookEvent(completedEvent);
       },
     });
 
-    await dispatchWebhookEvent(failedEvent);
+    await enqueueWebhookEvent(failedEvent.id);
 
     await prisma.auditLog.create({
       data: {
