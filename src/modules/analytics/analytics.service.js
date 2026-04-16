@@ -1,4 +1,9 @@
 import { prisma } from "../../config/db.js";
+import {
+  TRANSFER_STATUS,
+  TRANSACTION_TYPE,
+  WEBHOOK_EVENT_STATUS,
+} from "../../shared/constants/domain.js";
 
 export const getTransfersAnalytics = async (companyId) => {
   const totalTransfers = await prisma.transfer.count({
@@ -8,21 +13,21 @@ export const getTransfersAnalytics = async (companyId) => {
   const completedTransfers = await prisma.transfer.count({
     where: {
       companyId,
-      status: "COMPLETED",
+      status: TRANSFER_STATUS.COMPLETED
     },
   });
 
   const failedTransfers = await prisma.transfer.count({
     where: {
       companyId,
-      status: "FAILED",
+      status: TRANSFER_STATUS.FAILED
     },
   });
 
   const volumeResult = await prisma.transfer.aggregate({
     where: {
       companyId,
-      status: "COMPLETED",
+      status: TRANSFER_STATUS.COMPLETED
     },
     _sum: {
       amount: true,
@@ -70,7 +75,7 @@ export const getWebhooksAnalytics = async (companyId) => {
       entityId: {
         in: transferIds,
       },
-      status: "DELIVERED",
+      status: WEBHOOK_EVENT_STATUS.DELIVERED
     },
   });
 
@@ -80,7 +85,7 @@ export const getWebhooksAnalytics = async (companyId) => {
       entityId: {
         in: transferIds,
       },
-      status: "FAILED",
+      status: TRANSFER_STATUS.FAILED
     },
   });
 
@@ -135,11 +140,11 @@ export const getTopAccountsByVolume = async (companyId) => {
     );
 
     const totalDebits = account.transactions
-      .filter((transaction) => transaction.type === "DEBIT")
+      .filter((transaction) => transaction.type === TRANSACTION_TYPE.DEBIT)
       .reduce((sum, transaction) => sum + transaction.amount, 0);
 
     const totalCredits = account.transactions
-      .filter((transaction) => transaction.type === "CREDIT")
+      .filter((transaction) => transaction.type === TRANSACTION_TYPE.CREDIT)
       .reduce((sum, transaction) => sum + transaction.amount, 0);
 
     return {
@@ -191,12 +196,12 @@ export const getTransfersTimeline = async (companyId) => {
 
     groupedByDay[day].totalTransfers += 1;
 
-    if (transfer.status === "COMPLETED") {
+    if (transfer.status === TRANSFER_STATUS.COMPLETED) {
       groupedByDay[day].completedTransfers += 1;
       groupedByDay[day].totalVolume += transfer.amount;
-    } else if (transfer.status === "FAILED") {
+    } else if (transfer.status === TRANSFER_STATUS.FAILED) {
       groupedByDay[day].failedTransfers += 1;
-    } else if (transfer.status === "PENDING") {
+    } else if (transfer.status === TRANSFER_STATUS.PENDING) {
       groupedByDay[day].pendingTransfers += 1;
     }
   }
@@ -208,7 +213,7 @@ export const getRecentFailedTransfers = async (companyId) => {
   const failedTransfers = await prisma.transfer.findMany({
     where: {
       companyId,
-      status: "FAILED",
+      status: TRANSFER_STATUS.FAILED
     },
     orderBy: {
       createdAt: "desc",
@@ -248,7 +253,7 @@ export const getRecentFailedWebhooks = async (companyId) => {
       entityId: {
         in: transferIds,
       },
-      status: "FAILED",
+      status: WEBHOOK_EVENT_STATUS.FAILED
     },
     orderBy: {
       createdAt: "desc",
@@ -364,11 +369,11 @@ export const getSmartAlerts = async (companyId) => {
   });
 
   const completedTransfers = transfers.filter(
-    (transfer) => transfer.status === "COMPLETED"
+    (transfer) => transfer.status === TRANSFER_STATUS.COMPLETED
   );
 
   const failedTransfers = transfers.filter(
-    (transfer) => transfer.status === "FAILED"
+    (transfer) => transfer.status === TRANSFER_STATUS.FAILED
   );
 
   if (completedTransfers.length > 0) {

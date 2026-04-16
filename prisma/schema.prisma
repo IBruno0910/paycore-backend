@@ -7,6 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  ANALYST
+  OPERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  FROZEN
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TransactionType {
+  DEBIT
+  CREDIT
+}
+
+enum WebhookEventStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
 model Company {
   id        String   @id @default(uuid())
   name      String
@@ -25,8 +61,8 @@ model User {
   lastName     String
   email        String   @unique
   passwordHash String
-  role         String
-  status       String   @default("ACTIVE")
+  role         UserRole
+  status       UserStatus   @default(ACTIVE)
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id])
@@ -47,7 +83,7 @@ model Account {
   currency         String
   availableBalance Float    @default(0)
   heldBalance      Float    @default(0)
-  status           String   @default("ACTIVE")
+  status           AccountStatus   @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -88,7 +124,7 @@ model Transfer {
   destinationAccountId String
   amount               Float
   currency             String
-  status               String   @default("PENDING")
+  status               TransferStatus   @default(PENDING)
   description          String?
   failureReason        String?
   idempotencyKey       String?  @unique
@@ -104,7 +140,7 @@ model Transfer {
 model Transaction {
   id          String   @id @default(uuid())
   accountId   String
-  type        String
+  type        TransactionType
   amount      Float
   balanceBefore Float
   balanceAfter  Float
@@ -121,7 +157,7 @@ model WebhookEvent {
   entityType  String
   entityId    String
   payload     Json
-  status      String   @default("PENDING")
+  status      WebhookEventStatus   @default(PENDING)
   deliveredAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

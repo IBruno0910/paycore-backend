@@ -2,6 +2,11 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import { createWebhookEvent } from "../webhooks/webhooks.service.js";
 import { enqueueWebhookEvent } from "../webhooks/webhooks.queue.js";
+import {
+  ACCOUNT_STATUS,
+  TRANSFER_STATUS,
+  TRANSACTION_TYPE,
+} from "../../shared/constants/domain.js";
 
 export const createTransfer = async ({
   sourceAccountId,
@@ -54,7 +59,7 @@ export const createTransfer = async ({
       destinationAccountId,
       amount,
       currency: sourceAccount.currency,
-      status: "PENDING",
+      status: TRANSFER_STATUS.PENDING,
       description,
       createdByUserId,
       idempotencyKey, // 👈 esto
@@ -72,7 +77,7 @@ const createdEvent = await createWebhookEvent({
     destinationAccountId,
     amount,
     currency: sourceAccount.currency,
-    status: "PENDING",
+    status: TRANSFER_STATUS.PENDING,
   },
 });
 
@@ -103,8 +108,8 @@ await enqueueWebhookEvent(createdEvent.id);
       }
 
       if (
-        freshSourceAccount.status !== "ACTIVE" ||
-        freshDestinationAccount.status !== "ACTIVE"
+        freshSourceAccount.status !== ACCOUNT_STATUS.ACTIVE,
+        freshDestinationAccount.status !== ACCOUNT_STATUS.ACTIVE
       ) {
         throw new AppError("Both accounts must be active", 400);
       }
@@ -137,7 +142,7 @@ await enqueueWebhookEvent(createdEvent.id);
       await tx.transaction.create({
         data: {
           accountId: freshSourceAccount.id,
-          type: "DEBIT",
+          type: TRANSACTION_TYPE.DEBIT,
           amount,
           balanceBefore: sourceBalanceBefore,
           balanceAfter: updatedSourceAccount.availableBalance,
@@ -149,7 +154,7 @@ await enqueueWebhookEvent(createdEvent.id);
       await tx.transaction.create({
         data: {
           accountId: freshDestinationAccount.id,
-          type: "CREDIT",
+          type: TRANSACTION_TYPE.CREDIT,
           amount,
           balanceBefore: destinationBalanceBefore,
           balanceAfter: updatedDestinationAccount.availableBalance,
@@ -161,7 +166,7 @@ await enqueueWebhookEvent(createdEvent.id);
       const completedTransfer = await tx.transfer.update({
         where: { id: transfer.id },
         data: {
-          status: "COMPLETED",
+          status: TRANSFER_STATUS.COMPLETED,
           processedAt: new Date(),
         },
       });
@@ -177,7 +182,7 @@ await enqueueWebhookEvent(createdEvent.id);
             destinationAccountId,
             amount,
             currency: freshSourceAccount.currency,
-            status: "COMPLETED",
+            status: TRANSFER_STATUS.COMPLETED,
           },
         },
       });
@@ -207,7 +212,7 @@ await enqueueWebhookEvent(completedEvent.id);
     const failedTransfer = await prisma.transfer.update({
       where: { id: transfer.id },
       data: {
-        status: "FAILED",
+        status: TRANSFER_STATUS.FAILED,
         failureReason: error.message || "Transfer processing failed",
         processedAt: new Date(),
       },
