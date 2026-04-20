@@ -74,17 +74,17 @@ export const loginUser = async (data) => {
   });
 
   if (!user) {
-    throw new AppError("Invalid credentials");
+    throw new AppError("Invalid credentials", 401);
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isPasswordValid) {
-    throw new AppError("Invalid credentials");
+    throw new AppError("Invalid credentials", 401);
   }
 
   if (user.status !== "ACTIVE") {
-    throw new AppError("User is not active");
+    throw new AppError("User is not active", 401);
   }
 
   const accessToken = generateAccessToken(user);

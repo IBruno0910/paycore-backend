@@ -8,17 +8,19 @@ export const createTransferHandler = async (req, res, next) => {
 
     const idempotencyKey = req.headers["idempotency-key"];
 
-    const transfer = await createTransfer({
+    const result = await createTransfer({
       ...validatedData,
       companyId: req.user.companyId,
       createdByUserId: req.user.sub,
       idempotencyKey,
     });
 
-    return res.status(201).json({
+    return res.status(result.replayed ? 200 : 201).json({
       success: true,
-      message: "Transfer completed successfully",
-      data: transfer,
+      message: result.replayed
+        ? "Transfer already processed"
+        : "Transfer completed successfully",
+      data: result.transfer,
     });
   } catch (error) {
     next(error);

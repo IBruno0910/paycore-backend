@@ -23,7 +23,10 @@ export const createTransfer = async ({
     });
 
     if (existingTransfer) {
-      return existingTransfer;
+      return {
+        transfer: existingTransfer,
+        replayed: true,
+      };
     }
   }
   if (sourceAccountId === destinationAccountId) {
@@ -207,7 +210,10 @@ const completedEvent = await createWebhookEvent({
 
 await enqueueWebhookEvent(completedEvent.id);
 
-    return result;
+    return {
+    transfer: result,
+    replayed: false,
+  };
   } catch (error) {
     const failedTransfer = await prisma.transfer.update({
       where: { id: transfer.id },

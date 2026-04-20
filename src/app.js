@@ -5,7 +5,6 @@ import morgan from "morgan";
 
 import routes from "./routes/index.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
-import "./modules/webhooks/webhooks.worker.js";
 
 const app = express();
 

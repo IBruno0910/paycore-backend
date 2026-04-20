@@ -1,5 +1,16 @@
+import { logger } from "../shared/logger/logger.js";
+
 export const errorMiddleware = (err, req, res, next) => {
-  console.error(err);
+  logger.error(
+    {
+      message: err.message,
+      statusCode: err.statusCode || 500,
+      stack: err.stack,
+      path: req.originalUrl,
+      method: req.method,
+    },
+    "Request failed"
+  );
 
   const statusCode = err.statusCode || 500;
 

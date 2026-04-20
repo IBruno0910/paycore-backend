@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 
@@ -20,6 +21,7 @@ export const generateRefreshToken = (user) => {
   return jwt.sign(
     {
       sub: user.id,
+      jti: crypto.randomUUID(),
     },
     env.refreshTokenSecret,
     {
