@@ -42,10 +42,7 @@ async function main() {
     });
   }
 
-  console.log("Seed completed");
-}
-
-let mainAccount = await prisma.account.findFirst({
+  let mainAccount = await prisma.account.findFirst({
     where: {
       companyId,
       alias: "main-ars",
@@ -61,6 +58,13 @@ let mainAccount = await prisma.account.findFirst({
         availableBalance: 10000,
         heldBalance: 0,
         status: "ACTIVE",
+      },
+    });
+  } else {
+    mainAccount = await prisma.account.update({
+      where: { id: mainAccount.id },
+      data: {
+        availableBalance: 10000,
       },
     });
   }
@@ -83,6 +87,9 @@ let mainAccount = await prisma.account.findFirst({
         status: "ACTIVE",
       },
     });
+  }
+
+  console.log("Seed completed");
 }
 
 main()
