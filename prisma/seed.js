@@ -45,6 +45,46 @@ async function main() {
   console.log("Seed completed");
 }
 
+let mainAccount = await prisma.account.findFirst({
+    where: {
+      companyId,
+      alias: "main-ars",
+    },
+  });
+
+  if (!mainAccount) {
+    mainAccount = await prisma.account.create({
+      data: {
+        companyId,
+        alias: "main-ars",
+        currency: "ARS",
+        availableBalance: 10000,
+        heldBalance: 0,
+        status: "ACTIVE",
+      },
+    });
+  }
+
+  let secondaryAccount = await prisma.account.findFirst({
+    where: {
+      companyId,
+      alias: "secondary-ars",
+    },
+  });
+
+  if (!secondaryAccount) {
+    secondaryAccount = await prisma.account.create({
+      data: {
+        companyId,
+        alias: "secondary-ars",
+        currency: "ARS",
+        availableBalance: 0,
+        heldBalance: 0,
+        status: "ACTIVE",
+      },
+    });
+}
+
 main()
   .catch((error) => {
     console.error(error);
