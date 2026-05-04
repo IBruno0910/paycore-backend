@@ -29,11 +29,19 @@ export const createTransferHandler = async (req, res, next) => {
 
 export const getCompanyTransfersHandler = async (req, res, next) => {
   try {
-    const transfers = await getCompanyTransfers(req.user.companyId);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const result = await getCompanyTransfers({
+      companyId: req.user.companyId,
+      page,
+      limit,
+    });
 
     return res.status(200).json({
       success: true,
-      data: transfers,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);

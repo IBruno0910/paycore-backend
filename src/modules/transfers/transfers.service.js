@@ -261,13 +261,36 @@ await enqueueWebhookEvent(completedEvent.id);
   }
 };
 
-export const getCompanyTransfers = async (companyId) => {
-  return await prisma.transfer.findMany({
-    where: { companyId },
-    orderBy: {
-      createdAt: "desc",
+export const getCompanyTransfers = async ({ companyId, page = 1, limit = 10 }) => {
+  const safePage = Math.max(Number(page) || 1, 1);
+  const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+
+  const skip = (safePage - 1) * safeLimit;
+
+  const [transfers, total] = await Promise.all([
+    prisma.transfer.findMany({
+      where: { companyId },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: safeLimit,
+    }),
+
+    prisma.transfer.count({
+      where: { companyId },
+    }),
+  ]);
+
+  return {
+    data: transfers,
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.ceil(total / safeLimit),
     },
-  });
+  };
 };
 
 export const getTransferById = async ({ transferId, companyId }) => {
